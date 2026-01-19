@@ -1,4 +1,4 @@
-module flash-sale
+module Gin_Web
 
 go 1.25.5
 
