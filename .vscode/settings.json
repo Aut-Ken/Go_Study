@@ -1,0 +1,13 @@
+{
+    // 保存时自动格式化（这也是 Go 的哲学）
+    "editor.formatOnSave": true,
+    // 配置 Go 语言特定的设置
+    "[go]": {
+        "editor.defaultFormatter": "golang.go",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit" // 保存时自动帮你 增加/删除 import 包
+        }
+    },
+    // 开启 gopls 的高级功能（现在的默认配置通常已经够好，可不手动加）
+    "go.useLanguageServer": true
+}
