@@ -1,26 +1,73 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"sync/atomic"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
+type Product struct {
+	Stock int64
+}
+
+var (
+	iphone     = Product{Stock: 10}
+	orderQueue = make(chan string, 100)
+)
+
+func worker(workerID int) {
+	fmt.Printf("👷 工人 %d 启动，准备接单...\n", workerID)
+	for orderID := range orderQueue {
+		time.Sleep(time.Second * 1)
+		fmt.Printf("✅ 工人 %d: 完成订单 %s，剩余真实库存 %d\n",
+			workerID, orderID, atomic.LoadInt64(&iphone.Stock))
+	}
+}
+
 func main() {
-	// 1. 创建一个默认的路由引擎
 	r := gin.Default()
 
-	// 2. 配置一个简单的路由：当访问 /ping 时
-	r.GET("/ping", func(c *gin.Context) {
-		// 3. 返回 JSON 数据
-		// gin.H 本质上就是一个 map[string]interface{}
+	for i := 1; i <= 3; i++ {
+		go worker(i)
+	}
+
+	r.GET("/stock", func(c *gin.Context) {
+		currentStock := atomic.LoadInt64(&iphone.Stock)
 		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-			"status":  "success",
+			"stock": currentStock,
+			"msg":   "速来抢购",
 		})
 	})
 
-	// 3. 启动服务，默认监听 8080 端口
-	// 你可以在这里看到 "Listening and serving HTTP on :8080"
+	r.POST("/buy", func(c *gin.Context) {
+		leftBound := atomic.AddInt64(&iphone.Stock, -1)
+		if leftBound < 0 {
+			c.JSON(200, gin.H{"status": "fail", "msg": "手慢无, 商品售罄了"})
+			return
+		}
+
+		orderID := fmt.Sprintf("ORD-%d", time.Now().UnixNano())
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*500)
+		defer cancel()
+
+		select {
+		case orderQueue <- orderID:
+			c.JSON(200, gin.H{
+				"status": "success",
+				"msg":    "抢购成功啦！订单ID：" + orderID,
+			})
+		case <-ctx.Done():
+			atomic.AddInt64(&iphone.Stock, 1)
+			c.JSON(503, gin.H{
+				"status": "fail",
+				"msg":    "排队人数太多，系统繁忙",
+			})
+		}
+	})
+
 	r.Run(":8080")
 }
