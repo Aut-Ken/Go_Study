@@ -106,6 +106,47 @@ func main() {
 	*/
 
 	// 8. Transcation
-	fmt.Println("--- 开始进行寿命转移仪式 ---")
+	// ==========================================
+	/*
+		fmt.Println("--- 开始进行寿命转移仪式 ---")
 
+		// 1. 开启事务 (注意：这里返回的是 tx 对象，不是 db 对象了！)
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatal("开启事务失败: ", err)
+		}
+
+		// 准备一个“后悔药”机制
+		// defer 的作用是：函数退出前，不管成功失败，都检查一下。
+		// 如果没 Commit，就自动 Rollback (防止程序崩了导致死锁)
+		defer tx.Rollback()
+
+		// 2. 第一步：赵艺凯 (id=1) 减 10 岁
+		// 注意：这里用的是 tx.Exec，不是 db.Exec ！！
+		_, err = tx.Exec("UPDATE users SET age = age - 10 WHERE id = ?", 1)
+		if err != nil {
+			// 如果这一步错了，defer 会自动触发 Rollback
+			log.Fatal("扣减寿命失败: ", err)
+		}
+
+		// =============================================
+		// 🔥 模拟一个意外！
+		// 假设这里突然停电了，或者代码写错了 (比如故意写错表名 usersss)
+		// =============================================
+		_, err = tx.Exec("UPDATE users SET age = age + 10 WHERE id = ?", 2)
+		if err != nil {
+			// 报错了！此时程序会退出，defer 里的 Rollback 会执行
+			// 数据库会发现：刚才赵艺凯减掉的 10 岁会瞬间恢复！
+			log.Println("❌ 仪式失败！对方接收失败，开始回滚...")
+			return
+		}
+
+		// 3. 如果上面都没报错，提交事务！
+		err = tx.Commit()
+		if err != nil {
+			log.Fatal("提交失败: ", err)
+		}
+
+		fmt.Println("✅ 仪式完成！交易生效。")
+	*/
 }
